@@ -1,5 +1,7 @@
 # Librus CLI
 ### To run this program, you need installed node.js > 12.0
+*If you want to download, use Release*
+[Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)
 
 ## Install Node.js
 > Method One - https://nodejs.org/en/
