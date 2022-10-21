@@ -6,7 +6,7 @@ const { login, pass } = require("./config");
 const api = new Librus();
 
 function welcome(){
-    console.log("Librus CLI v0.x\n\n")
+    console.log("Librus CLI v0.2\n\n")
     console.log("Loading Default Option - Available Grades Table")
 }
 
