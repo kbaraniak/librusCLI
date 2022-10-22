@@ -1,7 +1,7 @@
 const { Table } = require("console-table-printer");
 const fs = require("fs");
 const var_dump = require("var_dump");
-let login, pass;
+//let login, pass;
 
 const Librus = require('./API/api')
 const api = new Librus();
@@ -14,6 +14,8 @@ function welcome(){
 function checkConfig(){
     if (fs.existsSync("./config.js")) {
         let { login, pass } = require("./config");
+        return {login, pass}
+
     }
     else{
         var configFile = fs.createWriteStream("./config.js");
@@ -62,7 +64,7 @@ async function getGradesTable(token){
 }
 
 welcome();
-checkConfig();
+const {login, pass} = checkConfig()
 
 api.authUsername(login, pass).then(async function (token) {
     if(token == "Bearer undefined"){
