@@ -1,12 +1,14 @@
 const { Table } = require("console-table-printer");
 const fs = require("fs");
 const var_dump = require("var_dump");
+const strikeText = require('./external/strike');
 
 const Librus = require("./API/api");
 const api = new Librus();
 
 function welcome() {
   console.log("Librus CLI v0.4\n\n");
+  console.log('')
 }
 
 function checkConfig() {
@@ -88,6 +90,10 @@ async function getTimetables(token, nextWeek=false) {
       let Time = TimetableLesson["Time"];
       let Name = TimetableLesson["Name"];
       let Teacher = TimetableLesson["Teacher"];
+      let Canceled = TimetableLesson["Canceled"];
+      if(Canceled){
+        Name = strikeText(Name) + " (Canceled)"
+      }
 
       tt.addRow({
         Number: Number + ". " + Time,
