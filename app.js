@@ -60,8 +60,8 @@ async function getGradesTable(token) {
   }
 }
 
-async function getTimetables(token) {
-  const Timetable = await api.getTimetable(token).then((data) => {
+async function getTimetables(token, nextWeek=false) {
+  const Timetable = await api.getTimetable(token, nextWeek).then((data) => {
     return data;
   });
   let tt;
@@ -108,6 +108,7 @@ async function menu(token){
     console.log("Select option")
     console.log("1. Check grades")
     console.log("2. Check timetable [Default]")
+    console.log("3. Check timetable [Next Week]")
     console.log("0. Changelog & Check latest version")
 
       readline.question('> ', async function(name) {
@@ -141,6 +142,9 @@ async function menu(token){
             else if(opt == 2){
                 await getTimetables(token);
             }
+            else if(opt == 3){
+                await getTimetables(token, nextWeek=true);
+            }
             else{
                 console.log("Selecting default option")
                 await getTimetables(token);
@@ -159,7 +163,6 @@ api.authUsername(login, pass).then(async function (token) {
     console.error("Please edit default data on config.js");
     process.exit(1);
   } else {
-    //await getGradesTable(token);
     await menu(token);
   }
 });
