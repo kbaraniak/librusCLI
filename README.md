@@ -16,3 +16,6 @@
 > Open terminal/console on file downloaded directory
 
 Type command: *node app.js*
+
+## Example Config
+> Rename config.js.def to config.js
