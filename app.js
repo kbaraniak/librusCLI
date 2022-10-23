@@ -117,12 +117,10 @@ async function menu(token){
             console.log("")
             menu();
         }
-
         else if (name.length < 0){
             console.log("Selecting default option")
             await getTimetables(token);
         }
-
         else{
             readline.close()
             opt = parseInt(name)
@@ -155,7 +153,6 @@ async function menu(token){
 
 welcome();
 const { login, pass } = checkConfig();
-
 
 api.authUsername(login, pass).then(async function (token) {
   if (token == "Bearer undefined") {
