@@ -1,0 +1,6 @@
+var config= {
+    login: "login",
+    pass: "haslo"
+}
+
+module.exports = config
