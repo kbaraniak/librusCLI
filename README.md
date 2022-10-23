@@ -1,6 +1,6 @@
 # Librus CLI
 ### To run this program, you need installed node.js > 12.0
-*If you want to download, use Release*
+*If you want to download, it is recommended to use Release*
 
 [Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)
 
