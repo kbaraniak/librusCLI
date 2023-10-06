@@ -1,42 +1,62 @@
 const { Table } = require("console-table-printer");
 const fs = require("fs");
 const var_dump = require("var_dump");
-const strikeText = require('./external/strike');
+const strikeText = require("./external/strike");
+const strings = require('node-strings');
 
-const Librus = require("./API/api");
-const api = new Librus();
+const { LibrusAPI } = require("./api/api");
+const api = new LibrusAPI();
 
 function welcome() {
-  console.log("Librus CLI v0.4\n\n");
-  console.log('')
+  console.log("Librus CLI v1.0 Beta 1\n\n");
+  console.log("");
 }
 
 function checkConfig() {
   if (fs.existsSync("./config.js")) {
-    let { login, pass } = require("./config");
-    return { login, pass };
+    try {
+      let { login, pass } = require("./config");
+      return { login, pass };
+    } catch {
+      console.log(
+        "[LibrusCLI] Invalid config file, please delete and rerun program"
+      );
+      process.exit(1);
+    }
   } else {
     var configFile = fs.createWriteStream("./config.js");
     configFile.write(
-      'var config= {\n\
-    login: "login-synergia",\n\
-    pass: "haslo-synergia"\n\
-}\n\
-\n\
-module.exports = config'
+      'var config= {\nlogin: "login-synergia",\npass: "password-synergia"\n}\n\nmodule.exports = config'
     );
     configFile.end();
-    console.log("No Found config file, creating default");
+    console.log("[LibrusCLI] No Found config file, creating new config");
+    console.log(
+      "[LibrusCLI] Created new config, please fill with your data and restart program"
+    );
+    return false;
   }
 }
 
-async function getGradesTable(token) {
-  const usrGrades = await api.getGrades(token).then((data) => {
-    return data;
-  });
-  let gt;
+function removeEmptyElements(obj) {
+  const newObj = {};
+  for (const key in obj) {
+    if (!(typeof obj[key] === "object" && !Object.keys(obj[key]).length)) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+}
 
-  gt = new Table({
+function fixURL(url){
+  return url.replaceAll("https://api.librus.pl/2.0/", "");
+}
+
+async function getGradesTable() {
+  console.log("Loading Grades ...")
+  const Grades = await api.getGrades().then((data) => {
+    return data.Grades;
+  });
+  let gradesTable = new Table({
     columns: [
       { name: "Grade", alignment: "center", color: "green" }, //
       { name: "Lesson", alignment: "center", color: "yellow" },
@@ -45,127 +65,214 @@ async function getGradesTable(token) {
     ],
   });
   try {
-    for (const usrGrade of usrGrades) {
-      gt.addRow({
-        Grade: usrGrade["Grade"],
-        Lesson: usrGrade["Subject"],
-        Teacher: usrGrade["Teacher"],
-        "Add Date": usrGrade["Date"],
+    for (const grade of Grades) {
+      const lessonGrade = await api.getSubjects(grade["Subject"].Id).then((data) => {
+        return data.Subject;
+      });
+      const authorGrade = await api.getUsers(grade["AddedBy"].Id).then((data) => {
+        return data.User;
+      });
+      gradesTable.addRow({
+        Grade: grade["Grade"],
+        Lesson: lessonGrade["Short"],
+        Teacher: authorGrade["FirstName"] + " "  + authorGrade["LastName"],
+        "Add Date": grade["Date"],
       });
     }
-    gt.printTable();
+    gradesTable.printTable();
   } catch (e) {
     console.error("Debugger Error Data [Grades API]:");
     var_dump(e);
     console.error("Debugger Error Data [Grades API - display Table]:");
-    var_dump(usrGrades);
+    var_dump(Grades);
   }
 }
 
-async function getTimetables(token, nextWeek=false) {
-  const Timetable = await api.getTimetable(token, nextWeek).then((data) => {
-    return data;
-  });
-  let tt;
-  for (var TimetableArray in Timetable) {
-    let t1 = Timetable[TimetableArray];
-    let td1 = null;
-    if (t1.length > 0) {
-      let Day = t1[0]["Day"]
-      let weekday = new Date(Day).toLocaleString('en-us', {weekday:'long'});
-      td1 = weekday + " (" + Day + ")";
+
+async function getTimetables(oneDay=false, week="") {
+  const Timetable = await api.getTimetables().then(async (data) => {
+    // console.log(data)
+    if(week == "next"){
+      let nextTimetable = await api.getAPI(fixURL(data.Pages.Next)).then((data) => {
+        return data.Timetable;
+      });
+      return nextTimetable;
     }
-    tt = new Table({
-      title: td1,
+    else if(week == "prev"){
+      let prevTimetable = await api.getAPI(fixURL(data.Pages.Prev)).then((data) => {
+        return data.Timetable;
+      });
+      return prevTimetable;
+    }
+    else{
+      return data.Timetable;
+    }
+  });
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const timetable = {};
+  let day = 0;
+
+  for (const x in Timetable) {
+    let tableTimetables = new Table({
+      title: `Day ${day + 1} (${days[day]})`,
       columns: [
         { name: "Number", alignment: "center", color: "green" },
         { name: "Lesson", alignment: "center", color: "yellow" },
         { name: "Teacher", alignment: "center", color: "cyan" },
       ],
     });
+    const elm = Timetable[x];
+    timetable[days[day]] = [];
 
-    for (var TimetableDay in t1) {
-      let TimetableLesson = t1[TimetableDay];
-      let Number = TimetableLesson["Number"];
-      let Time = TimetableLesson["Time"];
-      let Name = TimetableLesson["Name"];
-      let Teacher = TimetableLesson["Teacher"];
-      let Canceled = TimetableLesson["Canceled"];
-      if(Canceled){
-        Name = strikeText(Name) + " (Canceled)"
+    for (const i of elm) {
+      if (i) {
+        const filteredData = removeEmptyElements(i);
+        if (Object.keys(filteredData).length > 0) {
+          if(!oneDay){
+            let Time = filteredData[0].HourFrom + " - " + filteredData[0].HourTo;
+            let LessonName = filteredData[0].Subject.Short;
+            if (filteredData[0].IsCanceled) {
+              LessonName = strikeText(LessonName) + " (Canceled)";
+            }
+            tableTimetables.addRow({
+              Number: filteredData[0].LessonNo + ". " + Time,
+              Lesson: LessonName,
+              Teacher:
+                filteredData[0].Teacher.FirstName +
+                " " +
+                filteredData[0].Teacher.LastName,
+            });
+          }
+          else{
+            const getTodayNumber = () => {
+              const today = new Date();
+              const dayOfWeek = today.getDay();
+            
+              // Monday is 1, Sunday is 0
+              return Number(dayOfWeek);
+            };
+            function printData(filteredData){
+              let Time = filteredData[0].HourFrom + " - " + filteredData[0].HourTo;
+              let LessonName = filteredData[0].Subject.Short
+              if (filteredData[0].IsCanceled) {
+                LessonName = strikeText(LessonName) + " (Canceled)";
+              }
+              tableTimetables.addRow({
+                Number: filteredData[0].LessonNo + ". " + Time,
+                Lesson: LessonName,
+                Teacher:
+                  filteredData[0].Teacher.FirstName +
+                  " " +
+                  filteredData[0].Teacher.LastName,
+              });
+            }
+            const dayNumber = getTodayNumber();
+            if(oneDay == "Today" && filteredData[0].DayNo == dayNumber){
+              printData(filteredData)
+            }
+            else if(oneDay == "Tomorrow" && filteredData[0].DayNo == dayNumber+1){
+              printData(filteredData)
+            }
+          }
+        }
       }
+    }
+    if (tableTimetables.table.rows.length > 0) {
+      tableTimetables.printTable();
+    }
 
-      tt.addRow({
-        Number: Number + ". " + Time,
-        Lesson: Name,
-        Teacher: Teacher,
-      });
+    if (!timetable[days[day]].length) {
+      delete timetable[days[day]];
     }
-    if (t1.length > 0) {
-      tt.printTable();
-    }
+
+    day++;
   }
 }
-const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+
+function aboutChangelog(){
+    console.log("")
+    console.log(strings.bold(strings.underline("Changelog\n")))
+    console.log(strings.underline("Version v1.1"));
+    console.log("> Optimized CLI code");
+    console.log("> Updated code for latest API");
+    console.log("> Changed authentication method");
+    console.log(strings.underline("Version v0.4"));
+    console.log("> Update for Timetables");
+    console.log("> Add menu options");
+    console.log("> Add Changelog and check updates");
+    console.log("--------------------------------------------------");
+    console.log("Check latest version on:");
+    console.log("https://github.com/kbaraniak/librusCLI/releases/latest");
+    console.log("See you on the next time");
+}
+function aboutAuthor(){
+  console.log(strings.underline("\nAbout Author:"));
+  console.log("Author: Kamil Baraniak");
+  console.log("Github: https://github.com/kbaraniak");
+  console.log("[LibrusCLI v1.1] - Thank you for usage");
+}
+
+const readline = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+async function menu(token) {
+  console.log(strings.bold("Select option\n"));
+  console.log(strings.underline("Grades:"));
+  console.log("- 1. Show grades\n");
+  console.log(strings.underline("Timetables:"));
+  console.log("- 2. Show timetable");
+  console.log("- 3. Show timetable for next week");
+  console.log("- 4. Show timetable for prev week");
+  console.log("- 5. Show timetable only for Today");
+  console.log("- 6. Show timetable only for Tomorrow\n");
+  console.log(strings.underline("About:"));
+  console.log("- 0. Changelog");
+  console.log("- A. Author");
+
+  readline.question("> ", async function (arg) {
+    if ((arg.length < 0 && isNaN(parseInt(arg)))) {
+      readline.close();
+      console.log("");
+      menu();
+    } else if (arg.length < 0) {
+      console.log("Selected default option");
+      await getTimetables();
+    } else {
+      readline.close();
+      opt = parseInt(arg) || arg;
+      if (opt == 0) {
+        aboutChangelog();
+      } else if (opt == 1) {
+        await getGradesTable();
+      } else if (opt == 2) {
+        await getTimetables();
+      } else if (opt == 3) {
+        await getTimetables(oneDay=false, week="next");
+      } else if (opt == 4) {
+        await getTimetables(oneDay="Today")
+      } else if (opt == 5) {
+        await getTimetables(oneDay="Tomorrow")
+      } else if (arg == "A" || arg == "a"){
+        aboutAuthor();
+      } else {
+        console.log("Selected default option");
+        await getTimetables();
+      }
+    }
   });
-async function menu(token){
-    console.log("Select option")
-    console.log("1. Check grades")
-    console.log("2. Check timetable [Default]")
-    console.log("3. Check timetable [Next Week]")
-    console.log("0. Changelog & Check latest version")
-
-      readline.question('> ', async function(name) {
-        if(name.length < 0 && isNaN(parseInt(name))){
-            readline.close()
-            console.log("")
-            menu();
-        }
-        else if (name.length < 0){
-            console.log("Selecting default option")
-            await getTimetables(token);
-        }
-        else{
-            readline.close()
-            opt = parseInt(name)
-            if (opt == 0){
-                console.log("Version v0.4")
-                console.log("> Update for Timetables")
-                console.log("> Add menu options")
-                console.log("> Add Changelog and check updates")
-                console.log("--------------------------------------------------")
-                console.log("Check latest version on:")
-                console.log("https://github.com/kbaraniak/librusCLI/releases/latest")
-                console.log('See you next time')
-            }
-            else if(opt == 1){
-                await getGradesTable(token);
-            }
-            else if(opt == 2){
-                await getTimetables(token);
-            }
-            else if(opt == 3){
-                await getTimetables(token, nextWeek=true);
-            }
-            else{
-                console.log("Selecting default option")
-                await getTimetables(token);
-            }
-        }
-      });      
 }
 
+/* Main Function */
 welcome();
-const { login, pass } = checkConfig();
-
-api.authUsername(login, pass).then(async function (token) {
-  if (token == "Bearer undefined") {
-    console.error("Invalid Login or Password");
-    console.error("Please edit default data on config.js");
+let { login, pass } = checkConfig();
+api.mkToken(login, pass).then((r) => {
+  if (r.status == "error") {
+    console.error("[LibrusCLI] Invalid Login or Password");
+    console.error(
+      "[LibrusCLI] Please check for correct login/password in config.js"
+    );
     process.exit(1);
-  } else {
-    await menu(token);
   }
+  menu()
 });

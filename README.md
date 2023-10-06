@@ -1,21 +1,31 @@
 # Librus CLI
-### To run this program, you need installed node.js > 12.0
-*If you want to download, it is recommended to use Release*
 
-[Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)
 
-## Install Node.js
-> Method One - https://nodejs.org/en/
+## Requirements
+> nodejs - version supports Axios
 
-> Method Two (use powershell/cmd, only works on Windows 10/11) winget install node.js
+*If you want to download, it is recommended to use stable [Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)*
+
 
 ## Required modules
-> npm i console-table-printer var_dump querystring request
+- [1 Method] in terminal use: ``npm i``
+- [2 Method] install all required packages:
+``npm i axios axios-cookiejar-support node-strings tough-cookie``
 
 ## Run this program
-> Open terminal/console on file downloaded directory
-
-Type command: *node app.js*
+- Open terminal/console on directory downloaded file
+   Type command: ``node app.js``
 
 ## Example Config
-> Rename config.js.def to config.js
+- Config is generated automatically, if you have a problem, copy below text to the **config.js** file
+
+    ```js
+    var config = {
+        login: "synergia-login",
+        pass: "synergia-password",
+    };
+    module.exports = config;
+    ```
+
+## Sources
+API: [librus-api-rewrited](https://github.com/kbaraniak/librus-api-rewrited) [MIT License]

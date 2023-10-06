@@ -1,0 +1,33 @@
+{
+  "name": "libruscli",
+  "version": "1.0.0",
+  "description": "View your Timetables/Grades Librus from Command Line",
+  "main": "app.js",
+  "scripts": {
+    "run": "node main.js",
+    "test": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbaraniak/librusCLI.git"
+  },
+  "keywords": [
+    "librus",
+    "cli",
+    "libruscli",
+    "shell",
+    "librus-synergia"
+  ],
+  "author": "kbaraniak",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kbaraniak/librusCLI/issues"
+  },
+  "homepage": "https://github.com/kbaraniak/librusCLI#readme",
+  "dependencies": {
+    "axios": "^1.5.1",
+    "axios-cookiejar-support": "^4.0.7",
+    "node-strings": "^1.0.2",
+    "tough-cookie": "^4.1.3"
+  }
+}
