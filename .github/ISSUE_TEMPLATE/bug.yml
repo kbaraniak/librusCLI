@@ -1,0 +1,11 @@
+name: ❌ Bug Report
+title: "Bug Report - [your bug]"
+description: "Need support with an error you can't solve ?"
+body:
+- type: textarea
+  attributes:
+    label: "What's wrong?"
+labels: bug, waiting
+
+assignees:
+  - kbaraniak
