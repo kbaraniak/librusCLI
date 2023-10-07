@@ -1,0 +1,21 @@
+name: 💡 Great Idea
+title: "New Idea - [your idea]"
+description: "You have ideas for interesting solutions, write below."
+body:
+- type: textarea
+  attributes:
+    label: "Write about, what you plan to add."
+- type: dropdown
+  id: idea_category
+  attributes:
+    label: Select Category
+    multiple: no
+    default: 0
+    options:
+      - CLI - Console Interface
+      - APP - Main Code connecting to API
+      - Other
+labels: idea, waiting
+
+assignees:
+  - kbaraniak
