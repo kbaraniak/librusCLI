@@ -386,6 +386,9 @@ async function showMenu(debug) {
       } else if (arg == "A" || arg == "a") {
         aboutAuthor();
       } else if (arg == "x" || arg == "x") {
+        console.clear()
+        console.log(strings.bold(`Librus CLI ${appVersion}`))
+        console.log("Goodbye")
         process.exit(0);
       }
       else{
