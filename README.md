@@ -1,5 +1,7 @@
 # Librus CLI
 
+[How to use ?](#requirements)
+
 ## Screenshoots
 Main Window
 
@@ -20,7 +22,7 @@ Grades
 ## Requirements
 > nodejs - version supports Axios
 
-*If you want to download, it is recommended to use stable [Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)*
+*Recommended to download from [Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)*
 
 
 ## Required modules
@@ -42,6 +44,11 @@ Grades
     };
     module.exports = config;
     ```
+## Debug
+- Have problems with the app or want to test new features, add to your config
+```js
+debug: true
+```
 
 ## Sources
 API: [librus-api-rewrited](https://github.com/kbaraniak/librus-api-rewrited) [MIT License]
