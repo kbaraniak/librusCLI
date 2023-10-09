@@ -6,10 +6,10 @@ const strings = require("node-strings");
 
 const { LibrusAPI } = require("./api/api");
 const api = new LibrusAPI();
-const appVersion = "v1.0 Beta 2";
+const appVersion = "v1.0 Beta 3";
 let debug;
 
-function welcome() {
+function displayWelcome() {
   console.log(`Librus CLI ${appVersion}`);
 }
 
@@ -99,7 +99,6 @@ async function checkConfig() {
   }
 }
 
-
 function removeEmptyElements(obj) {
   const newObj = {};
   for (const key in obj) {
@@ -114,11 +113,18 @@ function fixURL(url) {
   return url.replaceAll("https://api.librus.pl/2.0/", "");
 }
 
-async function getGradesTable() {
+async function getGradesTable(debug=false) {
   console.log("Loading Grades ...");
-  const Grades = await api.getGrades().then((data) => {
+  let pointGrades = false;
+  let Grades = await api.getGrades().then((data) => {
     return data.Grades;
   });
+  if(Grades.length == 0){
+    pointGrades = true;
+    Grades = await api.getPointGrades().then((data) => {
+      return data.Grades;
+    });
+  }
   let gradesTable = new Table({
     columns: [
       { name: "Grade", alignment: "center", color: "green" }, //
@@ -139,8 +145,17 @@ async function getGradesTable() {
         .then((data) => {
           return data.User;
         });
+      let newGrade = grade["Grade"];
+      if(pointGrades){
+        let categoryGrade = grade["Category"].Url
+        CategoryData = await api.getAPI(fixURL(categoryGrade)).then((data) => {
+          return data.Category
+        });
+        let gradeMaxValue = CategoryData.ValueTo
+        newGrade = grade["Grade"] + "/" + gradeMaxValue
+      }
       gradesTable.addRow({
-        Grade: grade["Grade"],
+        Grade: newGrade,
         Lesson: lessonGrade["Short"],
         Teacher: authorGrade["FirstName"] + " " + authorGrade["LastName"],
         "Add Date": grade["Date"],
@@ -153,37 +168,13 @@ async function getGradesTable() {
     console.error("Debugger Error Data [Grades API - display Table]:");
     var_dump(Grades);
   }
-  backtoMenu();
-}
-
-async function experimentalPointsTable(debug=false) {
-  console.log("Loading Points Grades ...");
-  const Grades = await api.getPointGrades().then((data) => {
-    return data.Grades;
-  });
   if (debug) {
-    let sep = "==================================";
-    console.log("Debugging Data:");
-    console.log(
-      strings.italic(
-        "If you want to support the project, copy the data between '=' and create a new issue"
-      )
-    );
-    console.log(
-      strings.italic(
-        strings.bold(
-          "New Issue: https://github.com/kbaraniak/librusCLI/issues/new/choose"
-        )
-      )
-    );
-    console.log(sep);
-    console.log(Grades);
-    console.log(sep);
+    __debugData(Grades)
   }
   backtoMenu();
 }
 
-async function getTimetables(oneDay = false, week = "") {
+async function getTimetables(oneDay = false, week = "", debug=false) {
   const Timetable = await api.getTimetables().then(async (data) => {
     if (week == "next") {
       let nextTimetable = await api
@@ -278,14 +269,85 @@ async function getTimetables(oneDay = false, week = "") {
     if (tableTimetables.table.rows.length > 0) {
       tableTimetables.printTable();
     }
-
     if (!timetable[days[day]].length) {
       delete timetable[days[day]];
     }
 
     day++;
   }
+  if(debug){
+    __debugData(Timetable)
+  }
+
   backtoMenu();
+}
+
+async function getAttendances(debug){
+  console.log("Loading Attendaces ...");
+  const Attendances = await api.getAttendances().then((data) => {
+    return data.Attendances;
+  });
+  const Types = await api.getAttendancesTypes().then((data) => {
+    let types = [];
+    for (const type of data.Types){
+      types[type.Id] = {
+          Type: type.Name,
+        };
+    }
+    return types
+  });
+  let attendancesTable = new Table({
+    columns: [
+      { name: "Date", alignment: "center", color: "green" },
+      { name: "Lesson Nr", alignment: "center", color: "yellow" },
+      { name: "Type", alignment: "center", color: "red" },
+      { name: "Teacher", alignment: "center", color: "cyan" },
+    ],
+  });
+  for (const event of Attendances){
+    if(event.Type.Id != 100){
+      let LessonNum = event.LessonNo;
+      let EventDate = event.Date;
+      let EventType = event.Type.Id;
+      let EventName = Types[EventType].Type
+      let TeacherID = event.AddedBy.Id
+      let TeacherName = await api.getUsers(TeacherID).then((data) => {
+        return data.User.FirstName + " " + data.User.LastName
+      });
+      attendancesTable.addRow({
+        Date: EventDate,
+        "Lesson Nr": LessonNum,
+        "Type": EventName,
+        Teacher: TeacherName,
+      });
+    }
+  }
+  attendancesTable.printTable();
+  if(debug){
+    __debugData(Attendances)
+  }
+
+  backtoMenu();
+}
+
+function __debugData(data){
+  let sep = "==================================";
+  console.log("Debugging Data:");
+  console.log(
+    strings.italic(
+      "If you want to support the project, copy the data between '=' and create a new issue"
+    )
+  );
+  console.log(
+    strings.italic(
+      strings.bold(
+        "New Issue: https://github.com/kbaraniak/librusCLI/issues/new/choose"
+      )
+    )
+  );
+  console.log(sep);
+  console.log(data);
+  console.log(sep);
 }
 
 function backtoMenu() {
@@ -309,14 +371,18 @@ function backtoMenu() {
 function aboutChangelog() {
   console.log("");
   console.log(strings.bold(strings.underline("Changelog\n")));
+  console.log(strings.underline("Version v1.2"));
+  console.log("> Added Check Attendances");
+  console.log("> Optimized Debug Feature");
+  console.log("> Introduced Point Grades");
   console.log(strings.underline("Version v1.0"));
   console.log("> Optimized CLI code");
   console.log("> Updated code for latest API");
   console.log("> Changed authentication method");
   console.log(strings.underline("Version v0.4"));
   console.log("> Update for Timetables");
-  console.log("> Add menu options");
-  console.log("> Add Changelog and check updates");
+  console.log("> Added menu options");
+  console.log("> Added Changelog and check updates");
   console.log("--------------------------------------------------");
   console.log("Check latest version on:");
   console.log("https://github.com/kbaraniak/librusCLI/releases/latest");
@@ -339,7 +405,7 @@ async function showMenu(debug) {
     output: process.stdout,
   });
   console.clear();
-  welcome();
+  displayWelcome();
   console.log(strings.bold("Select option\n"));
   console.log(strings.underline("Grades:"));
   console.log("- 1. Show grades\n");
@@ -349,10 +415,8 @@ async function showMenu(debug) {
   console.log("- 4. Show timetable for prev week");
   console.log("- 5. Show timetable only for Today");
   console.log("- 6. Show timetable only for Tomorrow\n");
-  if (debug) {
-    console.log(strings.underline("Experimental:"));
-    console.log("- 91. Show point grades\n");
-  }
+  console.log(strings.underline("Student:"));
+  console.log("- 7. Show Attendances\n");
   console.log(strings.underline("About:"));
   console.log("- 0. Changelog");
   console.log("- A. Author");
@@ -370,9 +434,9 @@ async function showMenu(debug) {
       if (opt == 0) {
         aboutChangelog();
       } else if (opt == 1) {
-        await getGradesTable();
+        await getGradesTable(debug);
       } else if (opt == 2) {
-        await getTimetables();
+        await getTimetables(debug);
       } else if (opt == 3) {
         await getTimetables((oneDay = false), (week = "next"));
       } else if (opt == 4) {
@@ -381,8 +445,8 @@ async function showMenu(debug) {
         await getTimetables((oneDay = "Today"));
       } else if (opt == 6) {
         await getTimetables((oneDay = "Tomorrow"));
-      } else if (opt == 91 && debug) {
-        await experimentalPointsTable(debug);
+      } else if (opt == 7) {
+        await getAttendances(debug);
       } else if (arg == "A" || arg == "a") {
         aboutAuthor();
       } else if (arg == "x" || arg == "x") {
