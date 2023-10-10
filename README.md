@@ -23,6 +23,7 @@ Grades
 > nodejs - version supports Axios
 
 *Recommended to download from [Latest Release](https://github.com/kbaraniak/librusCLI/releases/latest)*
+*Unpack archive and open terminal*
 
 
 ## Required modules
