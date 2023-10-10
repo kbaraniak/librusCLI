@@ -6,7 +6,7 @@ const strings = require("node-strings");
 
 const { LibrusAPI } = require("./api/api");
 const api = new LibrusAPI();
-const appVersion = "v1.0 Beta 3";
+const appVersion = "v1.0 Beta 4";
 let debug;
 
 function displayWelcome() {
@@ -174,6 +174,54 @@ async function getGradesTable(debug=false) {
   backtoMenu();
 }
 
+async function getAttendances(debug){
+  console.log("Loading Attendaces ...");
+  const Attendances = await api.getAttendances().then((data) => {
+    return data.Attendances;
+  });
+  const Types = await api.getAttendancesTypes().then((data) => {
+    let types = [];
+    for (const type of data.Types){
+      types[type.Id] = {
+          Type: type.Name,
+        };
+    }
+    return types
+  });
+  let attendancesTable = new Table({
+    columns: [
+      { name: "Date", alignment: "center", color: "green" },
+      { name: "Lesson Nr", alignment: "center", color: "yellow" },
+      { name: "Type", alignment: "center", color: "red" },
+      { name: "Teacher", alignment: "center", color: "cyan" },
+    ],
+  });
+  for (const event of Attendances){
+    if(event.Type.Id != 100){
+      let lessonNum = event.LessonNo;
+      let eventDate = event.Date;
+      let eventType = event.Type.Id;
+      let eventName = Types[eventType].Type
+      let teacherID = event.AddedBy.Id
+      let teacherName = await api.getUsers(teacherID).then((data) => {
+        return data.User.FirstName + " " + data.User.LastName
+      });
+      attendancesTable.addRow({
+        Date: eventDate,
+        "Lesson Nr": lessonNum,
+        "Type": eventName,
+        Teacher: teacherName,
+      });
+    }
+  }
+  attendancesTable.printTable();
+  if(debug){
+    __debugData(Attendances)
+  }
+
+  backtoMenu();
+}
+
 async function getTimetables(oneDay = false, week = "", debug=false) {
   const Timetable = await api.getTimetables().then(async (data) => {
     if (week == "next") {
@@ -282,53 +330,64 @@ async function getTimetables(oneDay = false, week = "", debug=false) {
   backtoMenu();
 }
 
-async function getAttendances(debug){
-  console.log("Loading Attendaces ...");
-  const Attendances = await api.getAttendances().then((data) => {
-    return data.Attendances;
+async function getCalendar(debug){
+  console.log("Loading Events ...")
+  const Events = await api.getHomeWorks().then(async (data) => {
+    return data.HomeWorks
   });
-  const Types = await api.getAttendancesTypes().then((data) => {
-    let types = [];
-    for (const type of data.Types){
-      types[type.Id] = {
-          Type: type.Name,
-        };
-    }
-    return types
-  });
-  let attendancesTable = new Table({
+  let eventsTable = new Table({
+    title: 'Class Events',
     columns: [
-      { name: "Date", alignment: "center", color: "green" },
-      { name: "Lesson Nr", alignment: "center", color: "yellow" },
-      { name: "Type", alignment: "center", color: "red" },
-      { name: "Teacher", alignment: "center", color: "cyan" },
+      { name: "Name", alignment: "center", color: "green" },
+      { name: "Date", alignment: "center", color: "yellow" },
+      { name: "Category", alignment: "center", color: "cyan" },
+      { name: "Teacher", alignment: "center", color: "red" },
+      { name: "Time", alignment: "center", color: "white" },
     ],
   });
-  for (const event of Attendances){
-    if(event.Type.Id != 100){
-      let LessonNum = event.LessonNo;
-      let EventDate = event.Date;
-      let EventType = event.Type.Id;
-      let EventName = Types[EventType].Type
-      let TeacherID = event.AddedBy.Id
-      let TeacherName = await api.getUsers(TeacherID).then((data) => {
-        return data.User.FirstName + " " + data.User.LastName
-      });
-      attendancesTable.addRow({
-        Date: EventDate,
-        "Lesson Nr": LessonNum,
-        "Type": EventName,
-        Teacher: TeacherName,
-      });
-    }
+  for (const event of Events){
+    let eventName = event.Content.slice(0, 24)
+    let eventDate = event.Date
+    let eventTime = event.TimeFrom + " - " + event.TimeTo
+    eventCategoryId = event.Category.Id
+    eventTeacherId = event.CreatedBy.Id
+    let eventTeacher = await api.getUsers(eventTeacherId).then((data) => {
+      return data.User.FirstName + " " + data.User.LastName
+    });
+    let eventCategory = await api.getHomeWorksCategories(eventCategoryId).then((data) => {
+      return data.Category.Name
+    });
+    eventsTable.addRow({
+      Name: eventName,
+      Date: eventDate,
+      Category: eventCategory,
+      Teacher: eventTeacher,
+      "Time": eventTime
+    })
   }
-  attendancesTable.printTable();
+  eventsTable.printTable();
   if(debug){
-    __debugData(Attendances)
+    __debugData(Events)
   }
 
   backtoMenu();
 }
+
+async function getCalendar2(debug){
+  /* Free Days Class, Free Day Teachers*/
+  const Calendar = await api.getCalendar().then(async (data) => {
+    return data.Calendars[0].Id
+  });
+  const ClassCalendar = await api.getCalendar(Calendar).then(async (data) => {
+    for(const elm of data.Calendar.Substitutions){
+      substitution = await api.getCalendarSubstitutions(elm.Id).then(async (data) => {
+        console.log(data)
+      });
+    }
+  });
+
+}
+
 
 function __debugData(data){
   let sep = "==================================";
@@ -416,6 +475,8 @@ async function showMenu(debug) {
   console.log("- 5. Show timetable for prev week");
   console.log("- 6. Show timetable only for Today");
   console.log("- 7. Show timetable only for Tomorrow\n");
+  console.log(strings.underline("Calendar:"));
+  console.log("- 8. Show events\n");
   console.log(strings.underline("About:"));
   console.log("- 0. Changelog");
   console.log("- A. Author");
@@ -446,6 +507,8 @@ async function showMenu(debug) {
         await getTimetables((oneDay = "Today"));
       } else if (opt == 7) {
         await getTimetables((oneDay = "Tomorrow"));
+      } else if (opt == 8) {
+        await getCalendar(debug);
       } else if (arg == "A" || arg == "a") {
         aboutAuthor();
       } else if (arg == "x" || arg == "x") {

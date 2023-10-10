@@ -1,6 +1,6 @@
 {
   "name": "libruscli",
-  "version": "1.2",
+  "version": "1.3",
   "description": "View your Timetables/Grades Librus from Command Line",
   "main": "app.js",
   "scripts": {
