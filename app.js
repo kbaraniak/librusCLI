@@ -407,16 +407,15 @@ async function showMenu(debug) {
   console.clear();
   displayWelcome();
   console.log(strings.bold("Select option\n"));
-  console.log(strings.underline("Grades:"));
-  console.log("- 1. Show grades\n");
-  console.log(strings.underline("Timetables:"));
-  console.log("- 2. Show timetable");
-  console.log("- 3. Show timetable for next week");
-  console.log("- 4. Show timetable for prev week");
-  console.log("- 5. Show timetable only for Today");
-  console.log("- 6. Show timetable only for Tomorrow\n");
   console.log(strings.underline("Student:"));
-  console.log("- 7. Show Attendances\n");
+  console.log("- 1. Show grades");
+  console.log("- 2. Show attendances\n");
+  console.log(strings.underline("Timetables:"));
+  console.log("- 3. Show timetable");
+  console.log("- 4. Show timetable for next week");
+  console.log("- 5. Show timetable for prev week");
+  console.log("- 6. Show timetable only for Today");
+  console.log("- 7. Show timetable only for Tomorrow\n");
   console.log(strings.underline("About:"));
   console.log("- 0. Changelog");
   console.log("- A. Author");
@@ -436,17 +435,17 @@ async function showMenu(debug) {
       } else if (opt == 1) {
         await getGradesTable(debug);
       } else if (opt == 2) {
-        await getTimetables(debug);
-      } else if (opt == 3) {
-        await getTimetables((oneDay = false), (week = "next"));
-      } else if (opt == 4) {
-        await getTimetables((oneDay = false), (week = "prev"));
-      } else if (opt == 5) {
-        await getTimetables((oneDay = "Today"));
-      } else if (opt == 6) {
-        await getTimetables((oneDay = "Tomorrow"));
-      } else if (opt == 7) {
         await getAttendances(debug);
+      } else if (opt == 3) {
+        await getTimetables(debug);
+      } else if (opt == 4) {
+        await getTimetables((oneDay = false), (week = "next"));
+      } else if (opt == 5) {
+        await getTimetables((oneDay = false), (week = "prev"));
+      } else if (opt == 6) {
+        await getTimetables((oneDay = "Today"));
+      } else if (opt == 7) {
+        await getTimetables((oneDay = "Tomorrow"));
       } else if (arg == "A" || arg == "a") {
         aboutAuthor();
       } else if (arg == "x" || arg == "x") {
