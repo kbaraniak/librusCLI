@@ -1,4 +1,4 @@
 [submodule "api"]
 	path = api
-	url = https://github.com/kbaraniak/librus-api-rewrited/
+	url = https://github.com/kbaraniak/librus-api-rewrited
 	branch = cli
