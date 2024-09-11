@@ -38,12 +38,11 @@ Grades
 ## Example Config
 - Config is generated automatically, if you have a problem, copy below text to the **config.js** file
 
-    ```js
-    var config = {
-        login: "synergia-login",
-        pass: "synergia-password",
-    };
-    module.exports = config;
+    ```json
+        {
+            "login": "login",
+            "pass": "password"
+        }
     ```
 ## Debug
 - Have problems with the app or want to test new features, add to your config
